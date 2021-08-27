@@ -7,7 +7,7 @@ from nltk.tokenize import word_tokenize
 
 from flask import Flask
 from flask import render_template, request, jsonify
-from plotly.graph_objs import Bar
+from plotly.graph_objs import Bar, sunburst
 import joblib
 from sqlalchemy import create_engine
 from CapitalLetterCounter import CapitalLetterCounter
@@ -40,28 +40,72 @@ model = joblib.load("../models/classifier.pkl")
 def index():
     
     # extract data needed for visuals
+    df_clean = df.drop(['original'], axis=1)
     # TODO: Below is an example - modify to extract data for your own visuals
-    genre_counts = df.groupby('genre').count()['message']
+    # Count messages by genre
+    genre_counts = df.genre.value_counts()
+    genre_percent = 100*genre_counts/genre_counts.sum()
     genre_names = list(genre_counts.index)
-    
+
+    # Count messages by category
+    df_cat = df_clean.drop(columns=['id', 'message', 'genre'])
+    cat_count = df_cat.sum().sort_values(ascending=False)
+    category_names = cat_count.index
+    count = pd.DataFrame(cat_count, columns=['Counts'])
+    count.reset_index(level=0, inplace=True)
+    count.columns = ['Category', 'Counts']
+    top_20 = count.replace(count.groupby('Category').sum().sort_values('Counts', ascending=False).index[20:],
+                           'other').groupby('Category').sum()
+
+    df_agg = \
+    df_clean.melt(id_vars=['message', 'genre'], var_name='category', value_name='count').groupby(['genre', 'category'])[
+        'count'].sum().reset_index().query('count > 0')
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
         {
+            "data": [
+                {
+                    "type": "pie",
+                    #"hole": 0.6,
+                    "name": "Genre",
+                    #"pull": 0,
+                    "domain": {
+                        "x": genre_percent,
+                        "y": genre_names
+                    },
+                    "marker": {
+                        "colors": [
+                            "#C38D9E",
+                            "#E8A87C",
+                            "41B3A3"
+                        ]
+                    },
+                    "textinfo": "label+value",
+                    "hoverinfo": "all",
+                    "labels": genre_names,
+                    "values": genre_counts
+                }
+            ],
+            "layout": {
+                "title": "Distribution of Messages by Genre"
+            }
+        },
+        {
             'data': [
                 Bar(
-                    x=genre_names,
-                    y=genre_counts
+                    x=category_names,
+                    y=cat_count
                 )
             ],
 
             'layout': {
-                'title': 'Distribution of Message Genres',
+                'title': 'Distribution of Categories',
                 'yaxis': {
                     'title': "Count"
                 },
                 'xaxis': {
-                    'title': "Genre"
+                    'title': "Category"
                 }
             }
         }

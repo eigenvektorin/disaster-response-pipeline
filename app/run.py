@@ -56,6 +56,8 @@ def index():
     count.columns = ['Category', 'Counts']
     top_20 = count.replace(count.groupby('Category').sum().sort_values('Counts', ascending=False).index[20:],
                            'other').groupby('Category').sum()
+    top_20.reset_index(level=0, inplace=True)
+    top_20.columns = ['Category', 'Counts']
 
     df_agg = \
     df_clean.melt(id_vars=['message', 'genre'], var_name='category', value_name='count').groupby(['genre', 'category'])[
@@ -94,8 +96,8 @@ def index():
         {
             'data': [
                 Bar(
-                    x=category_names,
-                    y=cat_count
+                    x=top_20.Category,
+                    y=top_20.Counts
                 )
             ],
 

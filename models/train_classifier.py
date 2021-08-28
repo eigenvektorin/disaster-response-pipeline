@@ -27,6 +27,15 @@ from CharacterCounter import CharacterCounter
 from CapitalLetterCounter import CapitalLetterCounter
 
 def load_data(database_filepath):
+    """  Loads dataset from sql database and splits in onto into X and Y variables
+     Args:
+        database_filepath - Python str object - path to the SQL database
+
+    OUTPUT:
+        X - A pd series containing the messages
+        Y - A pd dataframe containing the category columns
+        Y.columns - A list that holds all the category names for the messages
+        """
     engine = create_engine(f'sqlite:///{database_filepath}')
     df = pd.read_sql_table('DisasterResponse', engine)
     X = df.message.values
@@ -34,6 +43,7 @@ def load_data(database_filepath):
     return X, Y, Y.columns
 
 def tokenize(text):
+    """ Tokenization function that processes the text data """
     text = re.sub(r"[^a-zA-Z0-9]", " ", text)
     words = word_tokenize(text)
     tokens = [w for w in words if w not in stopwords.words('english')]
@@ -46,6 +56,12 @@ def tokenize(text):
 
 
 def build_model():
+    """
+       Args:
+           None
+       Returns:
+           cv - A grid-search pipeline used to train the model and find the best parameters
+       """
     pipeline = Pipeline([
         ('features', FeatureUnion([
 
@@ -71,6 +87,15 @@ def build_model():
     return cv
 
 def evaluate_model(model, X_test, y_test, category_names):
+    """ Evaluates model on the test data and prints the result
+    Args:
+        model  = trained classifier model
+        X_test = the test data
+        Y_test = true values to compare with prediction on unseen test cases
+        category_names = column names of Y_test data
+    Returns:
+        None
+    """
     y_pred = model.predict(X_test)
     metrics_list_all = []
     for i in range(y_test.shape[1]):
@@ -87,6 +112,7 @@ def evaluate_model(model, X_test, y_test, category_names):
 
 
 def save_model(model, model_filepath):
+    """ Exports model as pickle file"""
     pickle.dump(model,open(model_filepath,'wb'))
 
 

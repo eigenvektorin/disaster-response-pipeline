@@ -4,6 +4,12 @@ import numpy as np
 from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
+    """   Loads and merges datasets.
+    Args:
+    messages_filepath - str object - path to messages.csv
+    categories_filepath - str object - path to categories.csv
+    Returns:
+    df - Pandas DataFrame by merging the messages and categories datasets on the common id  """
     messages = pd.read_csv(messages_filepath,encoding='utf-8')
     categories = pd.read_csv(categories_filepath, encoding='utf-8')
     df = pd.merge(messages, categories, on='id')
@@ -11,6 +17,12 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
+    """ Splits categories into separate category columns and converts values to 0 and 1; remove duplicates.
+    Args:
+    df - Pandas DataFrame object - the output from last step
+    Returns:
+    df - celaned Pandas DataFrame object
+    """
     categories = df['categories'].str.split(';', expand=True)
     row = categories[:1]
     category_colnames = np.array(row.apply(lambda x: x.str[0:-2])).flatten()
@@ -25,6 +37,13 @@ def clean_data(df):
     return df
 
 def save_data(df, database_filename):
+    """ Saves the clean dataset into an sqlite database.
+    Args:
+    df - Pandas DataFrame object - the cleaned dataset from last step
+    database_filename - Python str object - name of SQL database file that hold the data
+    Returns:
+    None
+    """
     engine = create_engine(f'sqlite:///{database_filename}')
     df.to_sql('DisasterResponse', engine, index=False, if_exists='replace')
 
